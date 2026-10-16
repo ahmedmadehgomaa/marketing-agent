@@ -1,0 +1,1033 @@
+{
+  "name": "Marketing Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "0e6682bd-7088-4aaa-ba9a-3bb316114a76",
+      "name": "Listen for incoming events",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -32,
+        64
+      ],
+      "webhookId": "362b388a-19a1-4252-90ac-af22adb1afe3",
+      "credentials": {
+        "telegramApi": {
+          "id": "4PeUtcAn9sNwYRTp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendChatAction",
+        "chatId": "={{ $json.message.from.id }}"
+      },
+      "id": "99541450-d8c4-4b4d-b6f3-575750c37796",
+      "name": "Show Typing",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        -272
+      ],
+      "webhookId": "3445c23f-5315-44c5-85ad-2866d659e293",
+      "credentials": {
+        "telegramApi": {
+          "id": "4PeUtcAn9sNwYRTp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text",
+              "stringValue": "={{ $json?.message?.text || \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fe90ffbf-d4d2-414b-af44-7c5f11c5a777",
+      "name": "Voice or Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        192,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "a0bf9719-4272-46f6-ab3b-eda6f7b44fd8",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0dabfce4-7963-44c7-b29d-19eefdbb68cd",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Listen for incoming events').item.json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "6c842376-53f4-45d5-a877-93a58f7676c7",
+      "name": "Get Voice File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        -16
+      ],
+      "webhookId": "845ee6c5-1e42-41b1-8666-55141fc561f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "4PeUtcAn9sNwYRTp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "9468357f-9374-4c51-bf86-105c46764e95",
+      "name": "Transcribe a recording",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        944,
+        -48
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are a helpful personal assistant called Jackie. \n\nToday's date is {{ $today.format('yyyy-MM-dd') }}.\n\nGuidelines:\n- When summarizing emails, include Sender, Message date, subject, and brief summary of email.\n- if the user did not specify a date in the request assume they are asking for today\n- When answering questions about calendar events, filter out events that don't apply to the question.  For example, the question is about events for today, only reply with events for today. Don't mention future events if it's more than 1 week away\n- Always look up an event or task (to get its ID) before updating, completing or deleting it\n- Before deleting a calendar event or task, or sending/replying to an email, confirm with the user unless they already clearly asked for exactly that\n- When replying to an email, find it first with the email tools to get its message ID, then mark it as read after handling it if the user asks\n- Use web_search for current events or facts you are unsure about, and mention the source briefly\n- Keep replies short and well formatted for Telegram (simple Markdown, no tables)"
+        }
+      },
+      "id": "c2b60d52-e7e5-4e27-b24c-6d08f31dba31",
+      "name": "Jackie, AI Assistant 👩🏻‍🏫",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        1312,
+        48
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "cohere/north-mini-code:free",
+        "options": {}
+      },
+      "id": "05d7a638-43b2-4b4e-b598-f55e4dd90160",
+      "name": "OpenRouter",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        768,
+        400
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "iyQuRWix673XYjwk",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $(\"Briefing Request\").isExecuted ? $(\"Briefing Request\").first().json.chatId : $(\"Listen for incoming events\").first().json.message.from.id }}",
+        "contextWindowLength": 20
+      },
+      "id": "8b461bd7-4292-49ef-90d6-36921c5995bd",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "eng.a.madeh@gmail.com"
+        },
+        "options": {
+          "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+          "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+          "fields": "=items(summary, start(dateTime))"
+        }
+      },
+      "id": "4e88e8a0-e07b-4d9d-9592-1ba8bcfeeaf7",
+      "name": "Google Calendar",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.1,
+      "position": [
+        2320,
+        416
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nsoaz60AZVHNIVG0",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "eng.a.madeh@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('start', 'Event start, ISO 8601 date-time') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('end', 'Event end, ISO 8601 date-time') }}",
+        "additionalFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('description', 'Optional event description', 'string', '') }}",
+          "location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('location', 'Optional event location', 'string', '') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', 'Event title') }}"
+        }
+      },
+      "id": "2fe65494-eb65-415c-af93-c53bac9a1c4a",
+      "name": "create_event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.1,
+      "position": [
+        1424,
+        624
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nsoaz60AZVHNIVG0",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "eng.a.madeh@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('event_id', 'ID of the event to update (find it with the calendar lookup tool)') }}",
+        "updateFields": {
+          "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('new_end', 'New end in ISO 8601, only if it should change', 'string', '') }}",
+          "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('new_start', 'New start in ISO 8601, only if it should change', 'string', '') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('new_title', 'New title, only if it should change', 'string', '') }}"
+        }
+      },
+      "id": "9a99ee46-75af-4cae-8ad1-bacb7c2942f5",
+      "name": "update_event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.1,
+      "position": [
+        1552,
+        624
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nsoaz60AZVHNIVG0",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "eng.a.madeh@gmail.com"
+        },
+        "eventId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('event_id', 'ID of the event to delete') }}",
+        "options": {}
+      },
+      "id": "88abd246-7236-47f8-bb6b-476c1d24703c",
+      "name": "delete_event",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        624
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "nsoaz60AZVHNIVG0",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 20,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "readStatus": "unread",
+          "receivedAfter": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Received_After', ``, 'string') }}",
+          "receivedBefore": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Received_Before', ``, 'string') }}"
+        }
+      },
+      "id": "c94721eb-733e-4957-b2e3-a98b6b55d937",
+      "name": "Get Email",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1888,
+        416
+      ],
+      "webhookId": "59a6f8fd-173b-4267-b24d-94d01c873b21",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 10,
+        "filters": {
+          "q": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', 'Gmail search query, e.g. from:someone subject:invoice') }}",
+          "readStatus": "both"
+        }
+      },
+      "id": "a1a358f0-825c-49c8-bd5b-41b8824f171b",
+      "name": "search_emails",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1936,
+        608
+      ],
+      "webhookId": "4dcf87c9-e049-4cb8-b324-611b51a93594",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message_id', 'ID of the email message') }}",
+        "simple": false,
+        "options": {}
+      },
+      "id": "a453bc64-9a6e-42fb-a069-f1ffed55641f",
+      "name": "get_email_by_id",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        2064,
+        608
+      ],
+      "webhookId": "3ca6973e-218d-4a8a-8fdc-d4ed7c82a1a2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message_id', 'ID of the email message to reply to') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message', 'Reply body, formatted nicely in HTML') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b609b2e4-c84a-4f7d-baa3-cc6e9d10ef7d",
+      "name": "reply_to_email",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        2192,
+        416
+      ],
+      "webhookId": "3a1faec5-ac44-4d3d-b12c-e57efd3e5c5a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('message_id', 'ID of the email message to mark as read') }}"
+      },
+      "id": "41520816-93d0-4235-8c3a-73ff57f639c0",
+      "name": "mark_email_as_read",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        2320,
+        608
+      ],
+      "webhookId": "bd5eafc4-56f5-491e-b135-621061af97f8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', `Please format this nicely in html`, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "70c16546-943f-425b-97a2-2ef5a646f158",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        2032,
+        416
+      ],
+      "webhookId": "f18ca97b-b79a-479b-8227-6497668747ee",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ytJFRxEh6CUoWSLk",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "task": "MDM2NTM1MjIxODE3ODcwMTg2OTE6MDow",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "id": "e45b66aa-d7f2-466f-b157-85bcd09a00b8",
+      "name": "Create a task in Google Tasks",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        416
+      ],
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "63Ztby5Jl8VIc7DK",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "task": "MDM2NTM1MjIxODE3ODcwMTg2OTE6MDow",
+        "additionalFields": {}
+      },
+      "id": "139b48fa-2149-459f-ad1e-2a727569285a",
+      "name": "Get many tasks in Google Tasks",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        640
+      ],
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "63Ztby5Jl8VIc7DK",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "task": "MDM2NTM1MjIxODE3ODcwMTg2OTE6MDow",
+        "taskId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task_id', 'ID of the task to mark as completed') }}",
+        "updateFields": {
+          "status": "completed"
+        }
+      },
+      "id": "12c36bf2-87a8-48a0-b9ea-d61d562b36f9",
+      "name": "complete_task",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        2832,
+        416
+      ],
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "63Ztby5Jl8VIc7DK",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "task": "MTY1MTc5NzMxMzA5NDc5MTQ5NzQ6MDow",
+        "taskId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task_id', 'ID of the task to delete') }}"
+      },
+      "id": "47be1660-17f6-423f-bc35-d0cd7b904436",
+      "name": "delete_task",
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        416
+      ],
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "63Ztby5Jl8VIc7DK",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', 'Web search query') }}",
+        "count": 5,
+        "additionalParameters": {}
+      },
+      "id": "b3abe65c-0374-4a22-8486-e8e5a74f2bb3",
+      "name": "web_search",
+      "type": "@brave/n8n-nodes-brave-search.braveSearchTool",
+      "typeVersion": 1.1,
+      "position": [
+        3088,
+        416
+      ],
+      "credentials": {
+        "braveSearchApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = String($input.first().json.output || '').trim() || 'I could not generate a reply.';\nconst max = 3800;\nconst parts = [];\nlet rest = text;\nwhile (rest.length > max) {\n  let cut = rest.lastIndexOf('\\n', max);\n  if (cut < max / 2) cut = rest.lastIndexOf(' ', max);\n  if (cut < max / 2) cut = max;\n  parts.push(rest.slice(0, cut));\n  rest = rest.slice(cut).trimStart();\n}\nparts.push(rest);\nreturn parts.map(output => ({ json: { output } }));"
+      },
+      "id": "f75e3b8b-c5fb-49fd-b0c8-822ab9a2c44c",
+      "name": "Split Long Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Briefing Request\").isExecuted ? $(\"Briefing Request\").first().json.chatId : $(\"Listen for incoming events\").first().json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "d0015467-816b-4da8-8bae-62762f56fe16",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        2192,
+        -192
+      ],
+      "webhookId": "7da64185-0165-459e-af49-9084e0421cd2",
+      "credentials": {
+        "telegramApi": {
+          "id": "4PeUtcAn9sNwYRTp",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Briefing Request\").isExecuted ? $(\"Briefing Request\").first().json.chatId : $(\"Listen for incoming events\").first().json.message.from.id }}",
+        "text": "Sorry, something went wrong while handling that request. Please try again in a moment.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "6023f3c7-4773-4a30-bdc9-336d6a13c74a",
+      "name": "Notify Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        3296,
+        288
+      ],
+      "webhookId": "d547dcef-383f-473d-9e59-bd4dfa9fdbd4",
+      "credentials": {
+        "telegramApi": {
+          "id": "4PeUtcAn9sNwYRTp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "00d2d1b1-f9f4-4c3c-b01b-dbb95bbf71a8",
+      "name": "Every Morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text",
+              "stringValue": "Give me my morning briefing for today: my calendar events, a short summary of my unread emails, and my open tasks. Keep it concise."
+            },
+            {
+              "name": "chatId",
+              "stringValue": "<__PLACEHOLDER_VALUE__Your Telegram chat ID for the daily briefing__>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a6432f1-ae7b-4c68-9470-40eefad209b0",
+      "name": "Briefing Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        816,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Process Telegram Request\n",
+        "height": 279,
+        "width": 624,
+        "color": 7
+      },
+      "id": "13491852-b89f-4d0e-b3dd-7f18aad485d6",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        144,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSend message back to Telegram\n",
+        "height": 288,
+        "width": 304,
+        "color": 7
+      },
+      "id": "55440b7f-2869-4802-8e46-c60060120341",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Listen for incoming events": {
+      "main": [
+        [
+          {
+            "node": "Show Typing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Voice or Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice or Text": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jackie, AI Assistant 👩🏻‍🏫": {
+      "main": [
+        [
+          {
+            "node": "Split Long Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete_event": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_emails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_email_by_id": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reply_to_email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark_email_as_read": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a task in Google Tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many tasks in Google Tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "complete_task": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete_task": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "web_search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Long Reply": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Morning": {
+      "main": [
+        [
+          {
+            "node": "Briefing Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Briefing Request": {
+      "main": [
+        [
+          {
+            "node": "Jackie, AI Assistant 👩🏻‍🏫",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "9a95fc88-83ee-4f36-9a7b-5ed1fd2ce281",
+  "meta": {
+    "instanceId": "eb949ab57bda692e807fc57e6c9d7a4552f285004125757c718f91c8dde2ea39"
+  },
+  "nodeGroups": [],
+  "id": "CSl11EF9cf2rUE9t",
+  "tags": []
+}
